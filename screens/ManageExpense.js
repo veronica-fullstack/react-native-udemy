@@ -1,4 +1,4 @@
-import { useContext, useLayoutEffect } from 'react';
+import { useContext, useLayoutEffect, useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 
 import Button from '../components/UI/Button';
@@ -7,8 +7,14 @@ import { GlobalStyles } from '../constants/styles';
 import { ExpensesContext } from '../store/expenses-context';
 import ExpenseForm from '../components/ManageExpense/ExpenseForm';
 import { storeExpense, updateExpense, deleteExpense } from '../util/http';
+import { getFormattedDate } from '../util/date';
+import axios from 'axios';
+import LoadingOverlay from '../components/UI/LoadingOverlay';
+import ErrorOverlay from '../components/UI/ErrorOverlay';
 
 function ManageExpense({ route, navigation }) {
+  const [isFetching, setIsFetching] = useState(false);
+  const [error, setError] = useState();
   const expensesCtx = useContext(ExpensesContext);
 
   const editedExpenseId = route.params?.expenseId;
@@ -25,9 +31,18 @@ function ManageExpense({ route, navigation }) {
   }, [navigation, isEditing]);
 
   async function deleteExpenseHandler() {
-    await deleteExpense(editedExpenseId);
-    expensesCtx.deleteExpense(editedExpenseId);
-    navigation.goBack();
+    setIsFetching(true);
+
+    try {
+      await deleteExpense(editedExpenseId);
+      expensesCtx.deleteExpense(editedExpenseId);
+      navigation.goBack();
+    } catch (error) {
+      setError(JSON.stringify(error.message));
+      setIsFetching(false);
+    }
+
+   
   }
 
   function cancelHandler() {
@@ -35,23 +50,36 @@ function ManageExpense({ route, navigation }) {
   }
 
   async function confirmHandler(expenseData) {
-    if (isEditing) {
-      console.log("edit_post_id:", editedExpenseId);
+    setIsFetching(true);
+    try {
+      if (isEditing) {
 
-      expensesCtx.updateExpense(
-        editedExpenseId,
-        expenseData
-      );
-
-      await updateExpense(editedExpenseId,expenseData);
-
-    } else {
-      const id = await storeExpense(expenseData);
-      console.log("post_id:", id);
-      
-      expensesCtx.addExpense({...expenseData, id:id});// local context
+        expensesCtx.updateExpense(
+          editedExpenseId,
+          expenseData
+        ); 
+  
+        await updateExpense(editedExpenseId,expenseData); 
+  
+      } else {
+        const id = await storeExpense(expenseData);
+        //console.log("post_id:", id);
+        expensesCtx.addExpense({...expenseData, id:id});// local context 
+      }
+      navigation.goBack();
+    } catch (error) {
+      setError(JSON.stringify(error.message));
+      setIsFetching(false);
     }
-    navigation.goBack();
+   
+  }
+
+  if (error && !isFetching) {
+    return <ErrorOverlay message={error} />;
+  }
+
+  if (isFetching) {
+    return <LoadingOverlay />
   }
 
   return (

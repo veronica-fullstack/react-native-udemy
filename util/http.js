@@ -1,19 +1,10 @@
-import axios from 'axios';
+import useAxios from "./useAxios";
 
-const API_URL = 'https://x8ki-letl-twmt.n7.xano.io/api:awsgO99o'
-const headers = {
-  headers: {
-    Accept: 'application/json',
-    'Content-Type': 'application/json',
-  }
-};
-
-export async function storeExpense(expenseData) {
+ export async function storeExpense(expenseData) {
  
-  const response = await axios.post(
-    API_URL + '/expenses',
-    expenseData,
-    headers
+  const response = await useAxios.post(
+   '/expenses',
+    expenseData
   );
 
   const id = response.data.id;
@@ -31,8 +22,8 @@ export async function storeExpense(expenseData) {
 }
   
   export async function fetchExpenses() {
-    const response = await axios.get(API_URL + '/expenses');
- 
+    const response = await useAxios.get('/expenses');
+  
     const expenses = [];
   
     for (const key in response.data) {
@@ -44,22 +35,25 @@ export async function storeExpense(expenseData) {
       };
       expenses.push(expenseObj);
     } 
+ 
     return expenses;
   }
 
-  export async function updateExpense(id, expenseData) {
-    try {
-      console.log(API_URL + `/expenses/${id}`);
-      console.log(expenseData);
-      const response = await axios.put(API_URL + `/expenses/${id}`, expenseData);
-      console.log(response);
-      return response.data;
-    } catch (error) {
-      console.log("error: ", error);
-    }
+  export function updateExpense(id, expenseData) {
+     try { 
+      const response = useAxios.patch(
+        '/expenses/'+ id, 
+        expenseData
+      );
+    //  console.log("response:", response);
+      return response;
+     } catch (error) {
+       throw error;
+       console.log("error: ", error);
+     }
    
   }
   
   export function deleteExpense(id) {
-    return axios.delete(API_URL + `/expenses/${id}`,headers);
+    return useAxios.delete(`/expenses/${id}`);
   }
